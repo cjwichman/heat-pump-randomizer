@@ -10,9 +10,7 @@
         input { width: 100%; padding: 10px; font-size: 16px; margin: 10px 0; box-sizing: border-box; }
         button { padding: 10px 20px; font-size: 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background: #45a049; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
         #result { margin-top: 20px; padding: 15px; background: #f0f0f0; display: none; border-radius: 5px; }
-        .error { color: red; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -28,6 +26,17 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_MxXm_qfjsamfR_rudZaMsBtDYCX2vqqTAkGvxIBK0GokdKEmVVMHEG_54zHrC9My/exec';
         let autocomplete, selectedPlace;
 
+        // Simple hash function to convert address to number
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            return Math.abs(hash);
+        }
+
         function initAutocomplete() {
             const input = document.getElementById('address');
             
@@ -38,7 +47,6 @@
             
             autocomplete.addListener('place_changed', () => {
                 selectedPlace = autocomplete.getPlace();
-                console.log('Place selected:', selectedPlace.formatted_address);
             });
         }
 
@@ -48,16 +56,21 @@
                 return;
             }
 
-            const treatment = Math.random() < 0.5 ? 'Low Treatment' : 'High Treatment';
+            // Use address hash to deterministically assign treatment
+            const addressHash = hashString(selectedPlace.formatted_address);
+            const isHighTreatment = (addressHash % 2) === 0;
+            
+            const treatment = isHighTreatment ? 'High Treatment' : 'Low Treatment';
+            const rebateAmount = isHighTreatment ? '$3,000' : '$1,500';
+
             const data = {
                 address: selectedPlace.formatted_address,
                 lat: selectedPlace.geometry.location.lat(),
                 lng: selectedPlace.geometry.location.lng(),
                 treatment: treatment,
+                rebate: rebateAmount,
                 timestamp: new Date().toISOString()
             };
-
-            console.log('Submitting:', data);
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
@@ -67,13 +80,11 @@
             }).then(() => {
                 document.getElementById('result').innerHTML = 
                     `<strong>Assignment:</strong> ${treatment}<br>
+                     <strong>Rebate Amount:</strong> ${rebateAmount}<br>
                      <strong>Address:</strong> ${data.address}`;
                 document.getElementById('result').style.display = 'block';
                 document.getElementById('address').value = '';
                 selectedPlace = null;
-            }).catch(err => {
-                console.error('Error:', err);
-                alert('Error submitting. Check console.');
             });
         }
 
