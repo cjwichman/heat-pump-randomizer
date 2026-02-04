@@ -6,15 +6,21 @@
     <style>
         body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
         h1 { color: #333; }
+        label { display: block; margin-top: 20px; margin-bottom: 5px; font-weight: bold; }
         input { width: 100%; padding: 10px; font-size: 16px; margin: 10px 0; box-sizing: border-box; }
         button { padding: 10px 20px; font-size: 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         #result { margin-top: 20px; padding: 15px; background: #f0f0f0; display: none; border-radius: 5px; }
+        .error { color: red; margin-top: 10px; }
     </style>
 </head>
 <body>
     <h1>Generic Heat Pump Rebate Generator</h1>
+    
+    <label for="address">Enter your address here:</label>
     <input id="address" type="text" placeholder="Start typing your address...">
+    
     <button onclick="submitAddress()">Submit</button>
     <div id="result"></div>
 
@@ -23,18 +29,22 @@
         let autocomplete, selectedPlace;
 
         function initAutocomplete() {
-            autocomplete = new google.maps.places.Autocomplete(
-                document.getElementById('address'),
-                { componentRestrictions: { country: 'us' } }
-            );
+            const input = document.getElementById('address');
+            
+            autocomplete = new google.maps.places.Autocomplete(input, {
+                componentRestrictions: { country: 'us' },
+                fields: ['address_components', 'formatted_address', 'geometry']
+            });
+            
             autocomplete.addListener('place_changed', () => {
                 selectedPlace = autocomplete.getPlace();
+                console.log('Place selected:', selectedPlace.formatted_address);
             });
         }
 
         function submitAddress() {
-            if (!selectedPlace) {
-                alert('Please select an address from the dropdown');
+            if (!selectedPlace || !selectedPlace.geometry) {
+                alert('Please select an address from the dropdown menu');
                 return;
             }
 
@@ -47,6 +57,8 @@
                 timestamp: new Date().toISOString()
             };
 
+            console.log('Submitting:', data);
+
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -57,6 +69,11 @@
                     `<strong>Assignment:</strong> ${treatment}<br>
                      <strong>Address:</strong> ${data.address}`;
                 document.getElementById('result').style.display = 'block';
+                document.getElementById('address').value = '';
+                selectedPlace = null;
+            }).catch(err => {
+                console.error('Error:', err);
+                alert('Error submitting. Check console.');
             });
         }
 
