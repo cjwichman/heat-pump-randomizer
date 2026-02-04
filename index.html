@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generic Heat Pump Rebate Generator</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+        h1 { color: #333; }
+        input { width: 100%; padding: 10px; font-size: 16px; margin: 10px 0; box-sizing: border-box; }
+        button { padding: 10px 20px; font-size: 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #result { margin-top: 20px; padding: 15px; background: #f0f0f0; display: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Generic Heat Pump Rebate Generator</h1>
+    <input id="address" type="text" placeholder="Start typing your address...">
+    <button onclick="submitAddress()">Submit</button>
+    <div id="result"></div>
+
+    <script>
+        const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+        let autocomplete, selectedPlace;
+
+        function initAutocomplete() {
+            autocomplete = new google.maps.places.Autocomplete(
+                document.getElementById('address'),
+                { componentRestrictions: { country: 'us' } }
+            );
+            autocomplete.addListener('place_changed', () => {
+                selectedPlace = autocomplete.getPlace();
+            });
+        }
+
+        function submitAddress() {
+            if (!selectedPlace) {
+                alert('Please select an address from the dropdown');
+                return;
+            }
+
+            const treatment = Math.random() < 0.5 ? 'Low Treatment' : 'High Treatment';
+            const data = {
+                address: selectedPlace.formatted_address,
+                lat: selectedPlace.geometry.location.lat(),
+                lng: selectedPlace.geometry.location.lng(),
+                treatment: treatment,
+                timestamp: new Date().toISOString()
+            };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => {
+                document.getElementById('result').innerHTML = 
+                    `<strong>Assignment:</strong> ${treatment}<br>
+                     <strong>Address:</strong> ${data.address}`;
+                document.getElementById('result').style.display = 'block';
+            });
+        }
+
+        window.onload = initAutocomplete;
+    </script>
+</body>
+</html>
