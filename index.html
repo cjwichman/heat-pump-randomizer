@@ -102,18 +102,15 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             }).then(() => {
-                // Add small delay so user sees the spinner
-                setTimeout(() => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('result').innerHTML = 
-                        `<strong>Assignment:</strong> ${treatment}<br>
-                         <strong>Rebate Amount:</strong> ${rebateAmount}<br>
-                         <strong>Address:</strong> ${data.address}`;
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('submitBtn').disabled = false;
-                    document.getElementById('address').value = '';
-                    selectedPlace = null;
-                }, 500);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').innerHTML = 
+                    `<strong>Assignment:</strong> ${treatment}<br>
+                     <strong>Rebate Amount:</strong> ${rebateAmount}<br>
+                     <strong>Address:</strong> ${data.address}`;
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('address').value = '';
+                selectedPlace = null;
             });
         }
 
