@@ -10,7 +10,22 @@
         input { width: 100%; padding: 10px; font-size: 16px; margin: 10px 0; box-sizing: border-box; }
         button { padding: 10px 20px; font-size: 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         #result { margin-top: 20px; padding: 15px; background: #f0f0f0; display: none; border-radius: 5px; }
+        #loading { margin-top: 20px; display: none; text-align: center; }
+        .spinner { 
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -19,20 +34,25 @@
     <label for="address">Enter your address here:</label>
     <input id="address" type="text" placeholder="Start typing your address...">
     
-    <button onclick="submitAddress()">Submit</button>
+    <button id="submitBtn" onclick="submitAddress()">Submit</button>
+    
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Assigning rebate...</p>
+    </div>
+    
     <div id="result"></div>
 
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_MxXm_qfjsamfR_rudZaMsBtDYCX2vqqTAkGvxIBK0GokdKEmVVMHEG_54zHrC9My/exec';
         let autocomplete, selectedPlace;
 
-        // Simple hash function to convert address to number
         function hashString(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) {
                 const char = str.charCodeAt(i);
                 hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32-bit integer
+                hash = hash & hash;
             }
             return Math.abs(hash);
         }
@@ -56,7 +76,11 @@
                 return;
             }
 
-            // Use address hash to deterministically assign treatment
+            // Show loading, hide result, disable button
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+
             const addressHash = hashString(selectedPlace.formatted_address);
             const isHighTreatment = (addressHash % 2) === 0;
             
@@ -78,13 +102,18 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             }).then(() => {
-                document.getElementById('result').innerHTML = 
-                    `<strong>Assignment:</strong> ${treatment}<br>
-                     <strong>Rebate Amount:</strong> ${rebateAmount}<br>
-                     <strong>Address:</strong> ${data.address}`;
-                document.getElementById('result').style.display = 'block';
-                document.getElementById('address').value = '';
-                selectedPlace = null;
+                // Add small delay so user sees the spinner
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').innerHTML = 
+                        `<strong>Assignment:</strong> ${treatment}<br>
+                         <strong>Rebate Amount:</strong> ${rebateAmount}<br>
+                         <strong>Address:</strong> ${data.address}`;
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('address').value = '';
+                    selectedPlace = null;
+                }, 500);
             });
         }
 
